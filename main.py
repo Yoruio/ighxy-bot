@@ -13,7 +13,7 @@ async def on_message(message):
     if message.author == client.user:
         return
     
-    if str(message.author) == "Kiggs#5770" and message.channel.id == 885224001247543337:
+    if str(message.author) == "Kiggs#5770" or message.content == "!pretend_to_be_devon" and message.channel.id == 885224001247543337:
         print("reacting")
         await message.add_reaction("<:piazza_endorsed:895420469199642687>")
         await message.add_reaction("<:class_endorsed:895420486748614676>")
