@@ -1,24 +1,58 @@
+from discord.ext.commands import Bot
 import discord
 import os
 from dotenv import load_dotenv
+import asyncio
 
-client = discord.Client()
+client = Bot("!")
+
+vc = None
+playing_believe = False
 
 @client.event
 async def on_ready():
     print("FUCK YEA")
 
-@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
+@client.command(
+    name='believe',
+    description='start 24/7 believe it or not music',
+    pass_context=True,
+)
+async def believe(ctx):
     
-    if str(message.author) == "Kiggs#5770" or message.content == "!pretend_to_be_devon" and message.channel.id == 885224001247543337:
-        print("reacting")
-        await message.add_reaction("<:piazza_endorsed:895420469199642687>")
-        await message.add_reaction("<:class_endorsed:895420486748614676>")
+    global vc
+    playing_believe = True
+    user = ctx.message.author
+    voice_channel=user.voice.channel
+    channel=None
+    if voice_channel!= None:
+        # grab user's voice channel
+        channel=voice_channel.name
+        await ctx.send('Playing believe it or not in channel '+ channel)
+        print('Playing believe it or not in channel '+ channel)
+
+        # create StreamPlayer
+        vc = await voice_channel.connect()
+        while playing_believe and vc.is_connected():
+            vc.play(discord.FFmpegPCMAudio('believe.mp3'))
+            while vc.is_connected() and vc.is_playing() and playing_believe:
+                await asyncio.sleep(1)
+
+        # disconnect after the player has finished
+        print("disconnected")
     
-    print(message.author)
+@client.command(
+    name='stop_believing',
+    description='stop 24/7 believe it or not music',
+    pass_context=True,
+)
+async def stop_believing(ctx):
+    global vc
+    await ctx.send('stopping believe')
+    playing_believe = False
+    print("disconnecting vc")
+    vc.stop()
+    await vc.disconnect()
 
 load_dotenv()
 client.run(os.getenv('TOKEN'))
