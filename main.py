@@ -6,12 +6,9 @@ import asyncio
 
 client = Bot("!")
 
-vc = None
-playing_believe = False
-
 @client.event
 async def on_ready():
-    print("FUCK YEA")
+    print("READY TO BELIEVE")
 
 @client.command(
     name='believe',
@@ -19,27 +16,37 @@ async def on_ready():
     pass_context=True,
 )
 async def believe(ctx):
-    
-    global vc
-    playing_believe = True
+    vc = discord.utils.get(ctx.bot.voice_clients, guild=ctx.guild)
+
+    if vc is not None:
+        vc = discord.utils.get(ctx.bot.voice_clients, guild=ctx.guild)
+        if vc.is_playing():
+            vc.stop()
+        await vc.disconnect()
+
+    vc = None
+
     user = ctx.message.author
-    voice_channel=user.voice.channel
-    channel=None
-    if voice_channel!= None:
-        # grab user's voice channel
-        channel=voice_channel.name
-        await ctx.send('Playing believe it or not in channel '+ channel)
-        print('Playing believe it or not in channel '+ channel)
+    if user.voice is not None:
+        voice_channel=user.voice.channel
+        if voice_channel!= None:
+            # grab user's voice channel
+            channel=voice_channel.name
+            await ctx.send('Playing believe it or not in channel '+ channel)
+            print('Playing believe it or not in channel '+ channel)
 
-        # create StreamPlayer
-        vc = await voice_channel.connect()
-        while playing_believe and vc.is_connected():
-            vc.play(discord.FFmpegPCMAudio('believe.mp3'))
-            while vc.is_connected() and vc.is_playing() and playing_believe:
-                await asyncio.sleep(1)
+            # create StreamPlayer
+            vc = await voice_channel.connect()
+            while vc.is_connected():
+                vc.play(discord.FFmpegPCMAudio('believe.mp3'), after=lambda e: print('done'))
+                while vc.is_connected() and vc.is_playing():
+                    await asyncio.sleep(1)
 
-        # disconnect after the player has finished
-        print("disconnected")
+            # disconnect after the player has finished
+            print("disconnected")
+            vc = None
+    else:
+        await ctx.send('You need to be in a voice channel to use this command')
     
 @client.command(
     name='stop_believing',
@@ -47,12 +54,17 @@ async def believe(ctx):
     pass_context=True,
 )
 async def stop_believing(ctx):
-    global vc
-    await ctx.send('stopping believe')
-    playing_believe = False
+    
     print("disconnecting vc")
-    vc.stop()
-    await vc.disconnect()
+
+    # create StreamPlayer
+    vc = discord.utils.get(ctx.bot.voice_clients, guild=ctx.guild)
+    if vc is None:
+        await ctx.send('Believe not currently playing')
+    else:
+        await ctx.send('Stopping believe')
+        vc.stop()
+        await vc.disconnect()
 
 load_dotenv()
 client.run(os.getenv('TOKEN'))
